@@ -49,7 +49,7 @@ export default function LoginScreen({ navigation }) {
         >
             <View style={styles.card}>
                 <Text style={styles.title}>WikiPlanner</Text>
-                <Text style={styles.subtitle}>Tu tiempo, tu vida, con la gracia de Dios.</Text>
+                <Text style={styles.subtitle}>Concéntrate en ser productivo, no en estar ocupado</Text>
 
                 <TextInput
                     style={styles.input}

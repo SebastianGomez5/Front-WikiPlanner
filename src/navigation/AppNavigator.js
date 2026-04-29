@@ -7,6 +7,7 @@ import { colors } from '../theme/color';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import AgendaScreen from '../screens/AgendaScreen';
+import CreateTaskScreen from '../screens/CreateTaskScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,12 +39,16 @@ function MainTabNavigator() {
     );
 }
 
-// 2. Configuramos la pila principal (Stack) que controla el Login
 export default function AppNavigator() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+            <Stack.Screen
+                name="CreateTask"
+                component={CreateTaskScreen}
+                options={{ headerShown: true, title: 'Nueva Tarea', headerStyle: { backgroundColor: colors.primary }, headerTintColor: '#fff' }}
+            />
         </Stack.Navigator>
     );
 }
