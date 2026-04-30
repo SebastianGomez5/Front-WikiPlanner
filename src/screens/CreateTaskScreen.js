@@ -7,22 +7,19 @@ import api from '../services/api';
 export default function CreateTaskScreen({ navigation }) {
     const [title, setTitle] = useState('');
     const [duration, setDuration] = useState('');
-    const [priority, setPriority] = useState('3'); // 1 a 5
+    const [priority, setPriority] = useState('3');
 
-    // Categorías y Niveles
     const [category, setCategory] = useState('Trabajo');
     const [energyLevel, setEnergyLevel] = useState('Medio');
     const [difficultyLevel, setDifficultyLevel] = useState('Media');
 
     const [isFlexible, setIsFlexible] = useState(true);
 
-    // Manejo de Fechas
     const [deadline, setDeadline] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
-
+    const [pickerMode, setPickerMode] = useState('date'); // Nuevo estado para saber si mostramos fecha u hora
     const [loading, setLoading] = useState(false);
 
-    // Función para guardar en la Base de Datos
     const handleCreateTask = async () => {
         if (!title || !duration) {
             Alert.alert('Datos incompletos', 'Por favor, ponle un título y una duración a tu tarea.');
@@ -40,13 +37,13 @@ export default function CreateTaskScreen({ navigation }) {
                 energy_level: energyLevel,
                 difficulty_level: difficultyLevel,
                 is_flexible: isFlexible,
-                deadline: deadline.toISOString() // Formato que entiende PostgreSQL
+                deadline: deadline.toISOString()
             };
 
             await api.post('/tasks/', payload);
 
-            Alert.alert('Felicidades!!', 'Tarea creada exitosamente.', [
-                { text: 'OK', onPress: () => navigation.goBack() } // Regresa a la pantalla anterior
+            Alert.alert('Felicidades!', 'Tarea creada exitosamente.', [
+                { text: 'OK', onPress: () => navigation.goBack() }
             ]);
 
         } catch (error) {
@@ -57,7 +54,27 @@ export default function CreateTaskScreen({ navigation }) {
         }
     };
 
-    // Componente auxiliar para crear botones de selección (tipo Radio Button)
+    const onChangeDate = (event, selectedDate) => {
+        // Cerramos el modal primero para evitar conflictos en Android
+        setShowDatePicker(Platform.OS === 'ios');
+
+        // Si el usuario canceló, no hacemos nada
+        if (event.type === 'dismissed') {
+            return;
+        }
+
+        // Si hay fecha nueva, la guardamos
+        if (selectedDate) {
+            setDeadline(selectedDate);
+        }
+    };
+
+    // Función para abrir el calendario en el modo correcto
+    const showMode = (currentMode) => {
+        setPickerMode(currentMode);
+        setShowDatePicker(true);
+    };
+
     const SelectionButton = ({ current, value, onPress }) => (
         <TouchableOpacity
             style={[styles.selectBtn, current === value && styles.selectBtnActive]}
@@ -118,20 +135,22 @@ export default function CreateTaskScreen({ navigation }) {
                     ))}
                 </View>
 
-                <Text style={styles.label}>Fecha Límite (Deadline)</Text>
-                <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                    <Text style={styles.dateText}>{deadline.toLocaleDateString()} {deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                </TouchableOpacity>
+                <Text style={styles.label}>Fecha y Hora Límite (Deadline)</Text>
+                <View style={styles.row}>
+                    <TouchableOpacity style={[styles.dateButton, { flex: 1, marginRight: 10 }]} onPress={() => showMode('date')}>
+                        <Text style={styles.dateText}>{deadline.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.dateButton, { flex: 1 }]} onPress={() => showMode('time')}>
+                        <Text style={styles.dateText}>{deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                    </TouchableOpacity>
+                </View>
 
                 {showDatePicker && (
                     <DateTimePicker
                         value={deadline}
-                        mode="datetime"
+                        mode={pickerMode}
                         display="default"
-                        onChange={(event, selectedDate) => {
-                            setShowDatePicker(Platform.OS === 'ios'); // En iOS se queda abierto, en Android se cierra solo
-                            if (selectedDate) setDeadline(selectedDate);
-                        }}
+                        onChange={onChangeDate}
                     />
                 )}
 

@@ -60,7 +60,7 @@ export default function HomeScreen({ navigation }) {
                     <Text style={styles.cardTime}>{endTime}</Text>
                 </View>
                 <View style={styles.taskColumn}>
-                    <Text style={styles.cardTitle}>Tarea ID: {item.task_id.substring(0, 8)}...</Text>
+                    <Text style={styles.cardTitle}>{item.task.title}</Text>
                     <Text style={styles.cardSubtitle}>
                         {item.google_event_id ? '✓ Sincronizado en Google' : 'No sincronizado'}
                     </Text>
