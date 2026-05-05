@@ -8,11 +8,11 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import AgendaScreen from '../screens/AgendaScreen';
 import CreateTaskScreen from '../screens/CreateTaskScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// 1. Configuramos las pestañas inferiores (Bottom Tabs)
 function MainTabNavigator() {
     return (
         <Tab.Navigator
@@ -23,6 +23,8 @@ function MainTabNavigator() {
                         iconName = focused ? 'home' : 'home-outline';
                     } else if (route.name === 'Agenda') {
                         iconName = focused ? 'calendar' : 'calendar-outline';
+                    } else if (route.name === 'Perfil') {
+                        iconName = focused ? 'person' : 'person-outline'; // Icono para el perfil
                     }
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
@@ -35,6 +37,7 @@ function MainTabNavigator() {
         >
             <Tab.Screen name="Inicio" component={HomeScreen} />
             <Tab.Screen name="Agenda" component={AgendaScreen} />
+            <Tab.Screen name="Perfil" component={ProfileScreen} />
         </Tab.Navigator>
     );
 }
