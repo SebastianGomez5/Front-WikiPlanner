@@ -8,9 +8,11 @@ export default function HomeScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Nuevos estados para el menú emergente (Modal)
     const [selectedBlock, setSelectedBlock] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    
+    // Memoria visual local
+    const [handledBlocks, setHandledBlocks] = useState({});
 
     const fetchAgenda = async () => {
         try {
@@ -21,11 +23,8 @@ export default function HomeScreen({ navigation }) {
             const finDia = new Date(hoy);
             finDia.setHours(23, 59, 59, 999);
 
-            const startIso = inicioDia.toISOString();
-            const endIso = finDia.toISOString();
-
             const response = await api.get('/time-blocks/agenda', {
-                params: { start_date: startIso, end_date: endIso }
+                params: { start_date: inicioDia.toISOString(), end_date: finDia.toISOString() }
             });
 
             setAgenda(response.data);
@@ -49,15 +48,14 @@ export default function HomeScreen({ navigation }) {
         fetchAgenda();
     }, []);
 
-    // FUNCIÓN CLAVE PARA LA TESIS: Registrar la decisión del usuario
     const handleDecision = async (action) => {
         if (!selectedBlock) return;
 
-        try {
-            const isAccepted = action === 'completada';
+        const currentBlockId = selectedBlock.id;
+        const isAccepted = action === 'completada';
 
+        try {
             const payload = {
-                // El chisme completo para que el algoritmo aprenda en el futuro
                 conflict_context: {
                     task_id: selectedBlock.task_id,
                     task_title: selectedBlock.task.title,
@@ -66,13 +64,16 @@ export default function HomeScreen({ navigation }) {
                 ai_suggested_action: "Agendado por Motor CSP",
                 user_final_action: isAccepted ? "Completada en el horario sugerido" : "Reprogramada por el usuario",
                 is_accepted: isAccepted,
-                confidence_score: 0.85 // Valor simulado inicial
+                confidence_score: 0.85
             };
 
-            // Mandamos el reporte al backend
             await api.post('/decisions/', payload);
 
-            // Cerramos el menú
+            setHandledBlocks(prev => ({
+                ...prev,
+                [currentBlockId]: action
+            }));
+
             setModalVisible(false);
             setSelectedBlock(null);
 
@@ -90,26 +91,55 @@ export default function HomeScreen({ navigation }) {
     };
 
     const openTaskMenu = (item) => {
-        setSelectedBlock(item);
-        setModalVisible(true);
+        // DOBLE CANDADO: Bloquea si la tocaste localmente o si ya viene completada de la BD
+        if (!handledBlocks[item.id] && item.task.status !== 'Completada') {
+            setSelectedBlock(item);
+            setModalVisible(true);
+        }
     };
 
     const renderItem = ({ item }) => {
         const startTime = new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const endTime = new Date(item.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+        // Evaluamos si ya está finalizada por la Base de Datos
+        const isDbCompleted = item.task.status === 'Completada';
+        
+        // Si está completada en BD, le clavamos el status 'completada' a la fuerza
+        let status = handledBlocks[item.id];
+        if (!status && isDbCompleted) {
+            status = 'completada';
+        }
+
+        let currentCardStyle = styles.card;
+        let currentTitleStyle = styles.cardTitle;
+        let statusText = item.google_event_id ? '✓ Sincronizado en Google' : 'No sincronizado';
+
+        if (status === 'completada') {
+            currentCardStyle = [styles.card, styles.cardCompleted];
+            currentTitleStyle = [styles.cardTitle, styles.textCompleted];
+            statusText = '✅ Tarea finalizada con éxito';
+        } else if (status === 'reprogramar') {
+            currentCardStyle = [styles.card, styles.cardRescheduled];
+            currentTitleStyle = [styles.cardTitle, styles.textRescheduled];
+            statusText = '🔄 Enviada para reprogramar';
+        }
+
         return (
-            // Convertimos la tarjeta en un botón tocable
-            <TouchableOpacity style={styles.card} onPress={() => openTaskMenu(item)}>
+            <TouchableOpacity 
+                style={currentCardStyle} 
+                onPress={() => openTaskMenu(item)}
+                activeOpacity={status ? 1 : 0.7} 
+            >
                 <View style={styles.timeColumn}>
-                    <Text style={styles.cardTime}>{startTime}</Text>
+                    <Text style={[styles.cardTime, status && {color: colors.textLight}]}>{startTime}</Text>
                     <Text style={styles.timeTo}>a</Text>
-                    <Text style={styles.cardTime}>{endTime}</Text>
+                    <Text style={[styles.cardTime, status && {color: colors.textLight}]}>{endTime}</Text>
                 </View>
                 <View style={styles.taskColumn}>
-                    <Text style={styles.cardTitle}>{item.task.title}</Text>
-                    <Text style={styles.cardSubtitle}>
-                        {item.google_event_id ? '✓ Sincronizado en Google' : 'No sincronizado'}
+                    <Text style={currentTitleStyle}>{item.task.title}</Text>
+                    <Text style={[styles.cardSubtitle, status && {color: colors.textLight}]}>
+                        {statusText}
                     </Text>
                 </View>
             </TouchableOpacity>
@@ -131,6 +161,7 @@ export default function HomeScreen({ navigation }) {
                 <ActivityIndicator size="large" color={colors.secondary} style={{ marginTop: 50 }} />
             ) : (
                 <FlatList
+                    // Ya no usamos el filtro agresivo, pasamos la agenda completa del día.
                     data={agenda}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
@@ -150,7 +181,6 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.fabText}>+</Text>
             </TouchableOpacity>
 
-            {/* EL MODAL DE APRENDIZAJE DE IA */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -208,6 +238,24 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3,
     },
+    cardCompleted: {
+        borderLeftColor: colors.success,
+        backgroundColor: '#F3F4F6',
+        opacity: 0.8,
+    },
+    cardRescheduled: {
+        borderLeftColor: colors.danger,
+        backgroundColor: '#F3F4F6',
+        opacity: 0.8,
+    },
+    textCompleted: {
+        textDecorationLine: 'line-through',
+        color: colors.success,
+    },
+    textRescheduled: {
+        textDecorationLine: 'line-through',
+        color: colors.danger,
+    },
     timeColumn: {
         width: 60,
         alignItems: 'center',
@@ -245,7 +293,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginTop: -2,
     },
-    // Estilos del Modal
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

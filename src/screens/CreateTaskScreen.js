@@ -47,7 +47,7 @@ export default function CreateTaskScreen({ navigation }) {
 
             await api.post('/tasks/', payload);
 
-            Alert.alert('¡Gloria a Dios!', 'Actividad creada exitosamente.', [
+            Alert.alert('¡Felicidades!', 'Actividad creada exitosamente.', [
                 { text: 'OK', onPress: () => navigation.goBack() }
             ]);
 
