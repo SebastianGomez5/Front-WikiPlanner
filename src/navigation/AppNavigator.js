@@ -9,6 +9,8 @@ import HomeScreen from '../screens/HomeScreen';
 import AgendaScreen from '../screens/AgendaScreen';
 import CreateTaskScreen from '../screens/CreateTaskScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import EditTaskScreen from '../screens/EditTaskScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -51,6 +53,11 @@ export default function AppNavigator() {
                 name="CreateTask"
                 component={CreateTaskScreen}
                 options={{ headerShown: true, title: 'Nueva Tarea', headerStyle: { backgroundColor: colors.primary }, headerTintColor: '#fff' }}
+            />
+            <Stack.Screen
+                name="EditTask"
+                component={EditTaskScreen}
+                options={{ headerShown: true, title: 'Editar Tarea', headerStyle: { backgroundColor: colors.primary }, headerTintColor: '#fff' }}
             />
         </Stack.Navigator>
     );
