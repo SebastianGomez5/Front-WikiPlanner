@@ -10,7 +10,7 @@ import AgendaScreen from '../screens/AgendaScreen';
 import CreateTaskScreen from '../screens/CreateTaskScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditTaskScreen from '../screens/EditTaskScreen';
-
+import StatsScreen from '../screens/StatsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -28,6 +28,9 @@ function MainTabNavigator() {
                     } else if (route.name === 'Perfil') {
                         iconName = focused ? 'person' : 'person-outline'; // Icono para el perfil
                     }
+                    else if (route.name === 'Métricas') {
+                        iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+                    }
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: colors.secondary,
@@ -39,6 +42,7 @@ function MainTabNavigator() {
         >
             <Tab.Screen name="Inicio" component={HomeScreen} />
             <Tab.Screen name="Agenda" component={AgendaScreen} />
+            <Tab.Screen name="Métricas" component={StatsScreen} />
             <Tab.Screen name="Perfil" component={ProfileScreen} />
         </Tab.Navigator>
     );
