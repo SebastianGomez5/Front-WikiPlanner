@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/color';
 import api from '../services/api';
-
+import { Linking } from 'react-native';
 export default function ProfileScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -62,6 +62,7 @@ export default function ProfileScreen({ navigation }) {
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             fetchProfileData();
+            checkGoogleStatus(); // NUEVO — revisa el estado cada vez que vuelves a esta pantalla
         });
         return unsubscribe;
     }, [navigation]);
@@ -136,6 +137,58 @@ export default function ProfileScreen({ navigation }) {
         setShowPicker(true);
     };
 
+    const [googleConnected, setGoogleConnected] = useState(false);
+    const [googleEmail, setGoogleEmail] = useState(null);
+    const [checkingGoogle, setCheckingGoogle] = useState(true);
+
+    const checkGoogleStatus = async () => {
+        try {
+            const response = await api.get('/google/status');
+            setGoogleConnected(response.data.conectado);
+            setGoogleEmail(response.data.email);
+        } catch (error) {
+            console.error('Error verificando estado de Google:', error);
+        } finally {
+            setCheckingGoogle(false);
+        }
+    };
+
+    const handleConnectGoogle = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const API_BASE = api.defaults.baseURL; // ej: http://192.168.20.79:8000/api
+            const url = `${API_BASE}/google/authorize?token=${token}`;
+
+            await Linking.openURL(url);
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo abrir el navegador para conectar Google.');
+        }
+    };
+
+    const handleDisconnectGoogle = async () => {
+        Alert.alert(
+            'Desconectar Google Calendar',
+            '¿Seguro que quieres desvincular tu cuenta? Las futuras tareas no se sincronizarán.',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Desconectar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.delete('/google/disconnect');
+                            setGoogleConnected(false);
+                            setGoogleEmail(null);
+                            Alert.alert('Listo', 'Tu cuenta de Google fue desconectada.');
+                        } catch (error) {
+                            Alert.alert('Error', 'No se pudo desconectar la cuenta.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     if (loading) {
         return (
             <View style={[styles.container, { justifyContent: 'center' }]}>
@@ -190,6 +243,34 @@ export default function ProfileScreen({ navigation }) {
                 <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings} disabled={saving}>
                     {saving ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.saveButtonText}>Guardar Preferencias</Text>}
                 </TouchableOpacity>
+            </View>
+
+            {/* TARJETA DE GOOGLE CALENDAR */}
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Google Calendar</Text>
+                <Text style={styles.cardSubtitle}>
+                    Conecta tu cuenta para que la IA sincronice automáticamente tu agenda generada.
+                </Text>
+
+                {checkingGoogle ? (
+                    <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />
+                ) : googleConnected ? (
+                    <>
+                        <View style={styles.connectedBadge}>
+                            <Text style={styles.connectedBadgeText}>✅ Cuenta conectada</Text>
+                            {googleEmail && (
+                                <Text style={styles.connectedBadgeEmail}>{googleEmail}</Text>
+                            )}
+                        </View>
+                        <TouchableOpacity style={styles.disconnectButton} onPress={handleDisconnectGoogle}>
+                            <Text style={styles.disconnectButtonText}>Desconectar cuenta</Text>
+                        </TouchableOpacity>
+                    </>
+                ) : (
+                    <TouchableOpacity style={styles.googleButton} onPress={handleConnectGoogle}>
+                        <Text style={styles.googleButtonText}>Conectar con Google Calendar</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -265,5 +346,45 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.primary, marginBottom: 20, textAlign: 'center' },
     input: { backgroundColor: colors.background, borderRadius: 8, padding: 15, marginBottom: 15, borderWidth: 1, borderColor: '#E5E7EB', color: colors.textDark },
     cancelButton: { padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-    cancelButtonText: { color: colors.textLight, fontWeight: 'bold', fontSize: 16 }
+    cancelButtonText: { color: colors.textLight, fontWeight: 'bold', fontSize: 16 },
+    googleButton: {
+        backgroundColor: '#4285F4',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    googleButtonText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        fontSize: 15,
+    },
+    connectedBadge: {
+        backgroundColor: '#ECFDF5',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    connectedBadgeText: {
+        color: colors.success,
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    connectedBadgeEmail: {
+        color: colors.textDark,
+        fontSize: 12,
+        marginTop: 4,
+    },
+    disconnectButton: {
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.danger,
+    },
+    disconnectButtonText: {
+        color: colors.danger,
+        fontWeight: 'bold',
+        fontSize: 13,
+    },
 });
