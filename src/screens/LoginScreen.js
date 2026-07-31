@@ -85,6 +85,10 @@ export default function LoginScreen({ navigation }) {
                         <Text style={styles.buttonText}>Ingresar</Text>
                     )}
                 </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                    <Text style={styles.registerLink}>¿No tienes cuenta? Regístrate</Text>
+                </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
     );
@@ -100,4 +104,5 @@ const styles = StyleSheet.create({
     input: { backgroundColor: colors.background, borderRadius: 8, padding: 15, marginBottom: 15, borderWidth: 1, borderColor: '#E5E7EB', color: colors.textDark },
     button: { backgroundColor: colors.secondary, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
     buttonText: { color: colors.surface, fontWeight: 'bold', fontSize: 16 },
+    registerLink: { textAlign: 'center', color: colors.primary, marginTop: 20, fontSize: 13, fontWeight: '600' },
 });
