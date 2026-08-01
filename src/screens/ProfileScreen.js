@@ -18,6 +18,11 @@ export default function ProfileScreen({ navigation }) {
     const [newPassword, setNewPassword] = useState('');
     const [savingPassword, setSavingPassword] = useState(false);
 
+    // Estados para el nombre
+    const [nameModalVisible, setNameModalVisible] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [savingName, setSavingName] = useState(false);
+
     // Estados para la jornada
     const [workStart, setWorkStart] = useState(new Date());
     const [workEnd, setWorkEnd] = useState(new Date());
@@ -115,6 +120,31 @@ export default function ProfileScreen({ navigation }) {
         }
     };
 
+    const handleUpdateName = async () => {
+        if (!newName.trim()) {
+            Alert.alert('Aviso', 'El nombre no puede estar vacío.');
+            return;
+        }
+
+        setSavingName(true);
+        try {
+            const response = await api.put('/users/me/name', { name: newName.trim() });
+            setUserData(response.data);
+            Alert.alert('¡Listo!', 'Tu nombre ha sido actualizado.');
+            setNameModalVisible(false);
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'No se pudo actualizar tu nombre.');
+        } finally {
+            setSavingName(false);
+        }
+    };
+
+    const openNameModal = () => {
+        setNewName(userData.name);
+        setNameModalVisible(true);
+    };
+
     const handleLogout = async () => {
         try {
             await AsyncStorage.removeItem('userToken');
@@ -206,7 +236,14 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>{userData.name ? userData.name.charAt(0).toUpperCase() : 'U'}</Text>
                 </View>
-                <Text style={styles.userName}>{userData.name}</Text>
+
+                <View style={styles.nameRow}>
+                    <Text style={styles.userName}>{userData.name}</Text>
+                    <TouchableOpacity onPress={openNameModal} style={styles.editNameIcon}>
+                        <Text style={styles.editNameIconText}>✏️</Text>
+                    </TouchableOpacity>
+                </View>
+
                 <Text style={styles.userEmail}>{userData.email}</Text>
 
                 <TouchableOpacity style={styles.passwordChangeBtn} onPress={() => setPasswordModalVisible(true)}>
@@ -315,6 +352,36 @@ export default function ProfileScreen({ navigation }) {
                 </View>
             </Modal>
 
+            {/* MODAL PARA CAMBIAR NOMBRE */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={nameModalVisible}
+                onRequestClose={() => setNameModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Editar Nombre</Text>
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Tu nombre completo"
+                            value={newName}
+                            onChangeText={setNewName}
+                            autoCapitalize="words"
+                        />
+
+                        <TouchableOpacity style={styles.saveButton} onPress={handleUpdateName} disabled={savingName}>
+                            {savingName ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.saveButtonText}>Guardar Nombre</Text>}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => setNameModalVisible(false)}>
+                            <Text style={styles.cancelButtonText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Espaciado al final para el scroll */}
             <View style={{ height: 40 }} />
         </ScrollView>
@@ -327,7 +394,19 @@ const styles = StyleSheet.create({
     profileCard: { backgroundColor: colors.surface, padding: 20, borderRadius: 15, elevation: 3, marginBottom: 20, alignItems: 'center' },
     avatarCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
     avatarText: { fontSize: 35, color: colors.surface, fontWeight: 'bold' },
-    userName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark, marginBottom: 5 },
+    userName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 5,
+    },
+    editNameIcon: {
+        padding: 4,
+    },
+    editNameIconText: {
+        fontSize: 14,
+    },
     userEmail: { fontSize: 14, color: colors.textLight, marginBottom: 20 },
     passwordChangeBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, borderWidth: 1, borderColor: colors.secondary },
     passwordChangeText: { color: colors.secondary, fontWeight: 'bold', fontSize: 13 },
