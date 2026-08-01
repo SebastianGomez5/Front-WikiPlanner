@@ -24,8 +24,8 @@ function MainTabNavigator() {
                     let iconName;
                     if (route.name === 'Inicio') {
                         iconName = focused ? 'home' : 'home-outline';
-                    } else if (route.name === 'Agenda') {
-                        iconName = focused ? 'calendar' : 'calendar-outline';
+                    } else if (route.name === 'Motor IA') {
+                        iconName = focused ? 'sparkles' : 'sparkles-outline';
                     } else if (route.name === 'Perfil') {
                         iconName = focused ? 'person' : 'person-outline'; // Icono para el perfil
                     }
@@ -42,7 +42,7 @@ function MainTabNavigator() {
             })}
         >
             <Tab.Screen name="Inicio" component={HomeScreen} />
-            <Tab.Screen name="Agenda" component={AgendaScreen} />
+            <Tab.Screen name="Motor IA" component={AgendaScreen} />
             <Tab.Screen name="Métricas" component={StatsScreen} />
             <Tab.Screen name="Perfil" component={ProfileScreen} />
         </Tab.Navigator>
