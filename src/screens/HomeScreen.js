@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, Modal, Alert, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/color';
 import api from '../services/api';
 
@@ -198,11 +199,40 @@ export default function HomeScreen({ navigation }) {
                     data={combinedAgenda}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
+                    contentContainerStyle={combinedAgenda.length === 0 ? styles.emptyListContent : null}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
                     }
                     ListEmptyComponent={
-                        <Text style={styles.emptyText}>No tienes tareas agendadas para hoy. ¡Aprovecha para descansar o crear nuevas!</Text>
+                        <View style={styles.emptyContainer}>
+                            <View style={styles.emptyIconBadge}>
+                                <Ionicons name="calendar-outline" size={44} color={colors.primary} />
+                            </View>
+                            <Text style={styles.emptyTitle}>¡Tu agenda está libre hoy!</Text>
+                            <Text style={styles.emptySubtitle}>
+                                No tienes tareas ni eventos agendados. Empieza creando una nueva tarea o generando tu agenda inteligente con la IA.
+                            </Text>
+
+                            <View style={styles.emptyActions}>
+                                <TouchableOpacity
+                                    style={styles.emptyButtonPrimary}
+                                    onPress={() => navigation.navigate('CreateTask')}
+                                    activeOpacity={0.8}
+                                >
+                                    <Ionicons name="add-circle-outline" size={20} color={colors.surface} style={styles.buttonIcon} />
+                                    <Text style={styles.emptyButtonTextPrimary}>Crear Nueva Tarea</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.emptyButtonSecondary}
+                                    onPress={() => navigation.navigate('Motor IA')}
+                                    activeOpacity={0.8}
+                                >
+                                    <Ionicons name="sparkles-outline" size={20} color={colors.secondary} style={styles.buttonIcon} />
+                                    <Text style={styles.emptyButtonTextSecondary}>Generar Agenda con IA</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     }
                 />
             )}
@@ -303,7 +333,91 @@ const styles = StyleSheet.create({
     cardSubtitle: { fontSize: 12, color: colors.textLight, marginTop: 4 },
     cardTime: { fontSize: 13, fontWeight: 'bold', color: colors.textDark },
     timeTo: { fontSize: 10, color: colors.textLight },
-    emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 50, fontSize: 16, fontStyle: 'italic' },
+    emptyListContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: 40,
+    },
+    emptyContainer: {
+        backgroundColor: colors.surface,
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+        width: '100%',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        marginVertical: 10,
+    },
+    emptyIconBadge: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#E0F2FE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.textDark,
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        color: colors.textLight,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+        paddingHorizontal: 10,
+    },
+    emptyActions: {
+        width: '100%',
+    },
+    emptyButtonPrimary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.primary,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        marginBottom: 12,
+        elevation: 2,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+    },
+    emptyButtonTextPrimary: {
+        color: colors.surface,
+        fontWeight: 'bold',
+        fontSize: 15,
+    },
+    emptyButtonSecondary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1.5,
+        borderColor: colors.secondary,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+    },
+    emptyButtonTextSecondary: {
+        color: colors.secondary,
+        fontWeight: 'bold',
+        fontSize: 15,
+    },
+    buttonIcon: {
+        marginRight: 8,
+    },
     fab: {
         position: 'absolute',
         right: 20,
