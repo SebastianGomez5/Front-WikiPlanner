@@ -5,6 +5,7 @@ import api from '../services/api';
 
 export default function HomeScreen({ navigation }) {
     const [agenda, setAgenda] = useState([]);
+    const [externalEvents, setExternalEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -23,11 +24,15 @@ export default function HomeScreen({ navigation }) {
             const finDia = new Date(hoy);
             finDia.setHours(23, 59, 59, 999);
 
-            const response = await api.get('/time-blocks/agenda', {
-                params: { start_date: inicioDia.toISOString(), end_date: finDia.toISOString() }
-            });
+            const params = { start_date: inicioDia.toISOString(), end_date: finDia.toISOString() };
 
-            setAgenda(response.data);
+            const [agendaResponse, externalResponse] = await Promise.all([
+                api.get('/time-blocks/agenda', { params }),
+                api.get('/time-blocks/external-events', { params })
+            ]);
+
+            setAgenda(agendaResponse.data);
+            setExternalEvents(externalResponse.data);
         } catch (error) {
             console.error('Error cargando la agenda:', error);
         } finally {
@@ -102,6 +107,23 @@ export default function HomeScreen({ navigation }) {
         const startTime = new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const endTime = new Date(item.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+        // NUEVO — Si es un evento externo de Google Calendar, renderizado simplificado
+        if (item.isExternal) {
+            return (
+                <View style={[styles.card, styles.cardExternal]}>
+                    <View style={styles.timeColumn}>
+                        <Text style={styles.cardTime}>{startTime}</Text>
+                        <Text style={styles.timeTo}>a</Text>
+                        <Text style={styles.cardTime}>{endTime}</Text>
+                    </View>
+                    <View style={styles.taskColumn}>
+                        <Text style={styles.cardTitleExternal}>📌 {item.task.title}</Text>
+                        <Text style={styles.cardSubtitle}>Evento externo de Google Calendar</Text>
+                    </View>
+                </View>
+            );
+        }
+
         // Evaluamos si ya está finalizada por la Base de Datos
         const isDbCompleted = item.task.status === 'Completada';
         
@@ -146,6 +168,17 @@ export default function HomeScreen({ navigation }) {
         );
     };
 
+    const combinedAgenda = [
+        ...agenda.map(item => ({ ...item, isExternal: false })),
+        ...externalEvents.map((item, index) => ({
+            id: `ext-${index}`,
+            start_time: item.start,
+            end_time: item.end,
+            task: { title: item.title, status: 'Externo' },
+            isExternal: true
+        }))
+    ].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
@@ -161,8 +194,8 @@ export default function HomeScreen({ navigation }) {
                 <ActivityIndicator size="large" color={colors.secondary} style={{ marginTop: 50 }} />
             ) : (
                 <FlatList
-                    // Ya no usamos el filtro agresivo, pasamos la agenda completa del día.
-                    data={agenda}
+                    // Ya no usamos el filtro agresivo, pasamos la agenda completa del día con eventos externos.
+                    data={combinedAgenda}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
                     refreshControl={
@@ -330,5 +363,14 @@ const styles = StyleSheet.create({
         color: colors.surface,
         fontWeight: 'bold',
         fontSize: 15,
-    }
+    },
+    cardExternal: {
+        borderLeftColor: '#9CA3AF',
+        backgroundColor: '#F9FAFB',
+    },
+    cardTitleExternal: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#6B7280',
+    },
 });
