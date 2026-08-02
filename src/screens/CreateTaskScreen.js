@@ -6,7 +6,11 @@ import api from '../services/api';
 
 export default function CreateTaskScreen({ navigation }) {
     const [title, setTitle] = useState('');
-    const [duration, setDuration] = useState('');
+    const [durationHours, setDurationHours] = useState(1);
+    const [durationMinutes, setDurationMinutes] = useState(0);
+
+    // Duración total en minutos, derivada de horas + minutos
+    const totalDurationMinutes = (durationHours * 60) + durationMinutes;
     const [priority, setPriority] = useState('3');
 
     const [category, setCategory] = useState('Trabajo');
@@ -24,8 +28,13 @@ export default function CreateTaskScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
 
     const handleCreateTask = async () => {
-        if (!title || !duration) {
-            Alert.alert('Datos incompletos', 'Por favor, ponle un título y una duración a tu tarea.');
+        if (!title) {
+            Alert.alert('Datos incompletos', 'Por favor, ponle un título a tu tarea.');
+            return;
+        }
+
+        if (totalDurationMinutes <= 0) {
+            Alert.alert('Duración inválida', 'La tarea debe durar al menos 15 minutos.');
             return;
         }
 
@@ -34,7 +43,7 @@ export default function CreateTaskScreen({ navigation }) {
             const payload = {
                 title: title,
                 description: isFlexible ? "Tarea flexible" : "Evento fijo",
-                duration_minutes: parseInt(duration),
+                duration_minutes: totalDurationMinutes,
                 priority: parseInt(priority),
                 category: category,
                 energy_level: energyLevel,
@@ -137,30 +146,61 @@ export default function CreateTaskScreen({ navigation }) {
                     )}
                 </View>
 
-                <View style={styles.row}>
-                    <View style={{ flex: 1, marginRight: 10 }}>
-                        <Text style={styles.label}>Duración (minutos)</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Ej: 90"
-                            keyboardType="numeric"
-                            value={duration}
-                            onChangeText={setDuration}
-                        />
+                <Text style={styles.label}>Duración</Text>
+                <View style={styles.durationRow}>
+                    <View style={styles.durationBlock}>
+                        <Text style={styles.durationBlockLabel}>Horas</Text>
+                        <View style={styles.stepperRow}>
+                            <TouchableOpacity
+                                style={styles.stepperBtn}
+                                onPress={() => setDurationHours(Math.max(0, durationHours - 1))}
+                            >
+                                <Text style={styles.stepperBtnText}>−</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.stepperValue}>{durationHours}</Text>
+                            <TouchableOpacity
+                                style={styles.stepperBtn}
+                                onPress={() => setDurationHours(Math.min(12, durationHours + 1))}
+                            >
+                                <Text style={styles.stepperBtnText}>+</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    <View style={{ flex: 1, opacity: isFlexible ? 1 : 0.5 }}>
-                        <Text style={styles.label}>Prioridad (1-5)</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Ej: 3"
-                            keyboardType="numeric"
-                            value={priority}
-                            onChangeText={setPriority}
-                            editable={isFlexible}
-                        />
+                    <View style={styles.durationBlock}>
+                        <Text style={styles.durationBlockLabel}>Minutos</Text>
+                        <View style={styles.stepperRow}>
+                            <TouchableOpacity
+                                style={styles.stepperBtn}
+                                onPress={() => setDurationMinutes(durationMinutes === 0 ? 45 : durationMinutes - 15)}
+                            >
+                                <Text style={styles.stepperBtnText}>−</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.stepperValue}>{durationMinutes}</Text>
+                            <TouchableOpacity
+                                style={styles.stepperBtn}
+                                onPress={() => setDurationMinutes(durationMinutes === 45 ? 0 : durationMinutes + 15)}
+                            >
+                                <Text style={styles.stepperBtnText}>+</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
+
+                <Text style={styles.durationSummary}>
+                    Total: {durationHours > 0 ? `${durationHours}h ` : ''}{durationMinutes}min
+                    {totalDurationMinutes === 0 && ' (selecciona una duración)'}
+                </Text>
+
+                <Text style={[styles.label, { opacity: isFlexible ? 1 : 0.5 }]}>Prioridad (1-5)</Text>
+                <TextInput
+                    style={[styles.input, { opacity: isFlexible ? 1 : 0.5 }]}
+                    placeholder="Ej: 3"
+                    keyboardType="numeric"
+                    value={priority}
+                    onChangeText={setPriority}
+                    editable={isFlexible}
+                />
 
                 <Text style={styles.label}>Categoría</Text>
                 <View style={styles.buttonGroup}>
@@ -210,5 +250,13 @@ const styles = StyleSheet.create({
     dateText: { color: colors.textDark, fontWeight: 'bold' },
     switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
     submitButton: { backgroundColor: colors.primary, padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20 },
-    submitButtonText: { color: colors.surface, fontWeight: 'bold', fontSize: 16 }
+    submitButtonText: { color: colors.surface, fontWeight: 'bold', fontSize: 16 },
+    durationRow: { flexDirection: 'row', gap: 15, marginBottom: 5 },
+    durationBlock: { flex: 1, backgroundColor: colors.background, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, alignItems: 'center' },
+    durationBlockLabel: { fontSize: 12, color: colors.textLight, marginBottom: 8, fontWeight: '600' },
+    stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+    stepperBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
+    stepperBtnText: { color: colors.surface, fontSize: 18, fontWeight: 'bold', marginTop: -2 },
+    stepperValue: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, minWidth: 24, textAlign: 'center' },
+    durationSummary: { textAlign: 'center', fontSize: 13, color: colors.primary, fontWeight: '600', marginTop: 8, marginBottom: 5 },
 });
