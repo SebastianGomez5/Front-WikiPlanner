@@ -9,7 +9,6 @@ export default function CreateTaskScreen({ navigation }) {
     const [durationHours, setDurationHours] = useState(1);
     const [durationMinutes, setDurationMinutes] = useState(0);
 
-    // Duración total en minutos, derivada de horas + minutos
     const totalDurationMinutes = (durationHours * 60) + durationMinutes;
     const [priority, setPriority] = useState('3');
 
@@ -20,7 +19,6 @@ export default function CreateTaskScreen({ navigation }) {
     const [isFlexible, setIsFlexible] = useState(true);
     const [targetDate, setTargetDate] = useState(new Date());
 
-    // NUEVO ESTADO: Preferencia de lapso de tiempo
     const [preferredTime, setPreferredTime] = useState('Cualquier');
 
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -119,7 +117,6 @@ export default function CreateTaskScreen({ navigation }) {
                     />
                 </View>
 
-                {/* SI ES FLEXIBLE, LE DAMOS LA OPCIÓN DE ELEGIR EL LAPSO IDEAL */}
                 {isFlexible && (
                     <View>
                         <Text style={styles.label}>Momento Ideal (Lapso sugerido)</Text>
@@ -138,7 +135,6 @@ export default function CreateTaskScreen({ navigation }) {
                     <TouchableOpacity style={[styles.dateButton, { flex: 1, marginRight: isFlexible ? 0 : 10 }]} onPress={() => showMode('date')}>
                         <Text style={styles.dateText}>{targetDate.toLocaleDateString()}</Text>
                     </TouchableOpacity>
-                    {/* Ocultamos la hora límite para tareas flexibles para que sea más intuitivo, la IA escoge la hora */}
                     {!isFlexible && (
                         <TouchableOpacity style={[styles.dateButton, { flex: 1 }]} onPress={() => showMode('time')}>
                             <Text style={styles.dateText}>{targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>

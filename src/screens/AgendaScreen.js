@@ -7,11 +7,11 @@ export default function AgendaScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
 
-  // NUEVOS ESTADOS: Para manejar la fila de tareas pendientes
+
   const [pendingTasks, setPendingTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
 
-  // Función para ir a buscar las tareas en cola
+
   const fetchPendingTasks = async () => {
     setLoadingTasks(true);
     try {
@@ -24,11 +24,10 @@ export default function AgendaScreen({ navigation }) {
     }
   };
 
-  // Hacemos que recargue la lista cada vez que el usuario entra a esta pestaña
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchPendingTasks();
-      setResultado(null); // Limpiamos el mensaje de éxito anterior al volver a entrar
+      setResultado(null);
     });
     return unsubscribe;
   }, [navigation]);
@@ -101,7 +100,7 @@ export default function AgendaScreen({ navigation }) {
         </Text>
       </View>
 
-      {/* NUEVA SECCIÓN: Visualización de Tareas Pendientes */}
+      {/* Visualización de Tareas Pendientes */}
       <View style={styles.pendingCard}>
         <View style={styles.pendingHeader}>
           <Text style={styles.cardTitle}>Fila de Espera</Text>
@@ -119,7 +118,7 @@ export default function AgendaScreen({ navigation }) {
             </Text>
             {pendingTasks.map((task) => (
               <View key={task.id} style={styles.taskItem}>
-                {/* Info de la tarea */}
+
                 <View style={{ flex: 1 }}>
                   <Text style={styles.taskItemTitle}>{task.title}</Text>
                   <Text style={styles.taskItemDetail}>
@@ -127,7 +126,7 @@ export default function AgendaScreen({ navigation }) {
                   </Text>
                 </View>
 
-                {/* Botones de acción */}
+
                 <View style={styles.taskActions}>
                   <TouchableOpacity
                     style={styles.editButton}

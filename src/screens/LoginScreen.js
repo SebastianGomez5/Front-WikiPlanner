@@ -17,8 +17,7 @@ export default function LoginScreen({ navigation }) {
 
         setLoading(true);
         try {
-            // FastAPI usa OAuth2, por lo que requiere los datos en formato "Formulario URL Encoded"
-            // y la variable del correo debe llamarse 'username' estrictamente.
+
             const params = new URLSearchParams();
             params.append('username', email);
             params.append('password', password);
@@ -27,11 +26,9 @@ export default function LoginScreen({ navigation }) {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
 
-            // Si Dios quiere y todo sale bien, guardamos el token
             const token = response.data.access_token;
             await AsyncStorage.setItem('userToken', token);
 
-            // Pasamos a la aplicación principal
             navigation.replace('MainTabs');
 
         } catch (error) {
@@ -94,7 +91,6 @@ export default function LoginScreen({ navigation }) {
     );
 }
 
-// ... Mantén los mismos estilos (styles) que ya tenías en la versión anterior ...
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.primary, justifyContent: 'center', padding: 20 },
     card: { backgroundColor: colors.surface, padding: 30, borderRadius: 15, elevation: 5 },

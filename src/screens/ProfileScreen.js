@@ -8,22 +8,16 @@ import { Linking } from 'react-native';
 export default function ProfileScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-
-    // Datos del usuario (Nombre y correo)
     const [userData, setUserData] = useState({ name: '', email: '' });
-
-    // Estados para la contraseña
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [savingPassword, setSavingPassword] = useState(false);
 
-    // Estados para el nombre
     const [nameModalVisible, setNameModalVisible] = useState(false);
     const [newName, setNewName] = useState('');
     const [savingName, setSavingName] = useState(false);
 
-    // Estados para la jornada
     const [workStart, setWorkStart] = useState(new Date());
     const [workEnd, setWorkEnd] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
@@ -43,14 +37,11 @@ export default function ProfileScreen({ navigation }) {
         return `${hours}:${minutes}:00`;
     };
 
-    // Traemos los datos de perfil y preferencias al mismo tiempo
     const fetchProfileData = async () => {
         try {
-            // 1. Pedimos los datos personales
             const userResponse = await api.get('/users/me');
             setUserData(userResponse.data);
 
-            // 2. Pedimos las preferencias de horario
             const settingsResponse = await api.get('/settings/');
             if (settingsResponse.data) {
                 setWorkStart(parseTimeFromBackend(settingsResponse.data.work_start_time));
@@ -67,7 +58,7 @@ export default function ProfileScreen({ navigation }) {
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             fetchProfileData();
-            checkGoogleStatus(); // NUEVO — revisa el estado cada vez que vuelves a esta pantalla
+            checkGoogleStatus();
         });
         return unsubscribe;
     }, [navigation]);

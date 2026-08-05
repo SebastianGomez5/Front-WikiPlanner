@@ -6,7 +6,7 @@ import {
 import { colors } from '../theme/color';
 import api from '../services/api';
 
-// Componente de barra de progreso reutilizable
+
 const ProgressBar = ({ value, color, max = 100 }) => {
     const pct = Math.min((value / max) * 100, 100);
     return (
@@ -21,7 +21,7 @@ const barStyles = StyleSheet.create({
     fill: { height: '100%', borderRadius: 5 }
 });
 
-// Componente de tarjeta de KPI individual
+
 const KpiCard = ({ label, value, unit = '%', color, description, extra }) => (
     <View style={styles.kpiCard}>
         <View style={styles.kpiHeader}>
@@ -72,7 +72,7 @@ export default function StatsScreen({ navigation }) {
 
     const { resumen, kpis, tendencia_semanal } = data || {};
 
-    // Color dinámico según el valor del KPI
+
     const colorFor = (value, inverse = false) => {
         if (inverse) {
             return value <= 10 ? '#10B981' : value <= 30 ? '#F59E0B' : '#EF4444';
@@ -80,7 +80,7 @@ export default function StatsScreen({ navigation }) {
         return value >= 75 ? '#10B981' : value >= 40 ? '#F59E0B' : '#EF4444';
     };
 
-    // Altura máxima de las barras del gráfico de tendencia
+
     const maxTrend = Math.max(...(tendencia_semanal || []).map(s => s.tasa_aceptacion), 1);
 
     return (

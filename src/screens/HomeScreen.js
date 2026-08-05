@@ -12,8 +12,7 @@ export default function HomeScreen({ navigation }) {
 
     const [selectedBlock, setSelectedBlock] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
-    
-    // Memoria visual local
+
     const [handledBlocks, setHandledBlocks] = useState({});
 
     const fetchAgenda = async () => {
@@ -97,7 +96,6 @@ export default function HomeScreen({ navigation }) {
     };
 
     const openTaskMenu = (item) => {
-        // DOBLE CANDADO: Bloquea si la tocaste localmente o si ya viene completada de la BD
         if (!handledBlocks[item.id] && item.task.status !== 'Completada') {
             setSelectedBlock(item);
             setModalVisible(true);
@@ -108,7 +106,7 @@ export default function HomeScreen({ navigation }) {
         const startTime = new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const endTime = new Date(item.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // NUEVO — Si es un evento externo de Google Calendar, renderizado simplificado
+
         if (item.isExternal) {
             return (
                 <View style={[styles.card, styles.cardExternal]}>
@@ -125,10 +123,8 @@ export default function HomeScreen({ navigation }) {
             );
         }
 
-        // Evaluamos si ya está finalizada por la Base de Datos
         const isDbCompleted = item.task.status === 'Completada';
-        
-        // Si está completada en BD, le clavamos el status 'completada' a la fuerza
+
         let status = handledBlocks[item.id];
         if (!status && isDbCompleted) {
             status = 'completada';
@@ -149,19 +145,19 @@ export default function HomeScreen({ navigation }) {
         }
 
         return (
-            <TouchableOpacity 
-                style={currentCardStyle} 
+            <TouchableOpacity
+                style={currentCardStyle}
                 onPress={() => openTaskMenu(item)}
-                activeOpacity={status ? 1 : 0.7} 
+                activeOpacity={status ? 1 : 0.7}
             >
                 <View style={styles.timeColumn}>
-                    <Text style={[styles.cardTime, status && {color: colors.textLight}]}>{startTime}</Text>
+                    <Text style={[styles.cardTime, status && { color: colors.textLight }]}>{startTime}</Text>
                     <Text style={styles.timeTo}>a</Text>
-                    <Text style={[styles.cardTime, status && {color: colors.textLight}]}>{endTime}</Text>
+                    <Text style={[styles.cardTime, status && { color: colors.textLight }]}>{endTime}</Text>
                 </View>
                 <View style={styles.taskColumn}>
                     <Text style={currentTitleStyle}>{item.task.title}</Text>
-                    <Text style={[styles.cardSubtitle, status && {color: colors.textLight}]}>
+                    <Text style={[styles.cardSubtitle, status && { color: colors.textLight }]}>
                         {statusText}
                     </Text>
                 </View>

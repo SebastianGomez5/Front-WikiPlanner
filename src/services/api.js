@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resetToLogin } from '../navigation/navigationRef';
 
 const API_URL = 'http://192.168.20.79:8000/api';
 
@@ -7,8 +8,6 @@ const api = axios.create({
     baseURL: API_URL,
 });
 
-// Este "Interceptor" es nuestro guardia de seguridad automático.
-// Antes de que cualquier petición salga del celular, le pega el Token JWT.
 api.interceptors.request.use(
     async (config) => {
         const token = await AsyncStorage.getItem('userToken');
@@ -18,6 +17,18 @@ api.interceptors.request.use(
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        if (error.response?.status === 401) {
+            await AsyncStorage.removeItem('userToken');
+            resetToLogin();
+        }
+
+        return Promise.reject(error);
+    }
 );
 
 export default api;
