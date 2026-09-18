@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetToLogin } from '../navigation/navigationRef';
 
-const API_URL = 'http://192.168.20.79:8000/api';
+const API_URL = 'https://siren-charcoal-existing.ngrok-free.dev/api';
 
 const api = axios.create({
     baseURL: API_URL,

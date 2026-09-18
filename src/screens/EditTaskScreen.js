@@ -8,10 +8,9 @@ import { colors } from '../theme/color';
 import api from '../services/api';
 
 export default function EditTaskScreen({ navigation, route }) {
-    // La tarea a editar llega por parámetros de navegación
+
     const { task } = route.params;
 
-    // Inicializamos todos los estados con los valores actuales de la tarea
     const [title, setTitle] = useState(task.title || '');
     const initialTotalMinutes = task.duration_minutes || 60;
     const [durationHours, setDurationHours] = useState(Math.floor(initialTotalMinutes / 60));
@@ -25,7 +24,6 @@ export default function EditTaskScreen({ navigation, route }) {
     const [isFlexible, setIsFlexible] = useState(task.is_flexible !== false);
     const [preferredTime, setPreferredTime] = useState(task.preferred_time_of_day || 'Cualquier');
 
-    // Para la fecha: usamos deadline si es flexible, fixed_start_time si es fija
     const initialDate = task.is_flexible
         ? (task.deadline ? new Date(task.deadline) : new Date())
         : (task.fixed_start_time ? new Date(task.fixed_start_time) : new Date());
