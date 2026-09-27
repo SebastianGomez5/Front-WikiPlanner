@@ -196,7 +196,7 @@ export default function AgendaScreen({ navigation }) {
         </View>
       )}
 
-      {/* NUEVA SECCIÓN: Tareas que no se pudieron agendar */}
+      {/* SECCIÓN: Tareas que no se pudieron agendar con diagnóstico y sugerencias */}
       {resultado && resultado.tareas_no_agendadas && resultado.tareas_no_agendadas.length > 0 && (
         <View style={styles.warningCard}>
           <Text style={styles.warningTitle}>
@@ -204,8 +204,30 @@ export default function AgendaScreen({ navigation }) {
           </Text>
           {resultado.tareas_no_agendadas.map((item) => (
             <View key={item.task_id} style={styles.warningItem}>
-              <Text style={styles.warningItemTitle}>{item.title}</Text>
-              <Text style={styles.warningItemReason}>💡 Causa: {item.reason}</Text>
+              <View style={styles.warningItemHeader}>
+                <Text style={styles.warningItemTitle}>{item.title}</Text>
+                <TouchableOpacity
+                  style={styles.warningEditBtn}
+                  onPress={() => {
+                    const foundTask = pendingTasks.find(t => String(t.id) === String(item.task_id));
+                    if (foundTask) {
+                      navigation.navigate('EditTask', { task: foundTask });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.warningEditBtnText}>✏️ Ajustar</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.warningItemReason}>📌 Motivo: {item.reason}</Text>
+
+              {item.suggestion && (
+                <View style={styles.suggestionBox}>
+                  <Text style={styles.suggestionTitle}>💡 Sugerencia de la IA:</Text>
+                  <Text style={styles.suggestionText}>{item.suggestion}</Text>
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -419,9 +441,52 @@ const styles = StyleSheet.create({
   },
   warningItem: {
     backgroundColor: '#FFFFFF',
-    padding: 10,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  warningItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  warningEditBtn: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  warningEditBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#B45309',
+  },
+  suggestionBox: {
+    backgroundColor: '#EFF6FF',
     borderRadius: 8,
-    marginBottom: 8,
+    padding: 10,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.secondary,
+  },
+  suggestionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 2,
+  },
+  suggestionText: {
+    fontSize: 12,
+    color: '#374151',
+    lineHeight: 16,
   },
   warningItemTitle: {
     fontWeight: 'bold',
