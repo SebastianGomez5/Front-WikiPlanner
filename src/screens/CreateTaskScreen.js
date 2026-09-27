@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, ActivityIndicator, Platform, Modal, Pressable } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../theme/color';
@@ -25,6 +25,31 @@ export default function CreateTaskScreen({ navigation }) {
     const [pickerMode, setPickerMode] = useState('date');
     const [loading, setLoading] = useState(false);
 
+    const isTargetToday = () => {
+        const today = new Date();
+        return (
+            targetDate.getDate() === today.getDate() &&
+            targetDate.getMonth() === today.getMonth() &&
+            targetDate.getFullYear() === today.getFullYear()
+        );
+    };
+
+    const isTimeSlotPast = (slot) => {
+        if (!isTargetToday()) return false;
+        const nowH = new Date().getHours();
+        if (slot === 'Mañana') return nowH >= 12;
+        if (slot === 'Tarde') return nowH >= 18;
+        if (slot === 'Noche') return nowH >= 23;
+        return false;
+    };
+
+    useEffect(() => {
+        if (isTimeSlotPast(preferredTime)) {
+            setPreferredTime('Cualquier');
+        }
+    }, [targetDate]);
+
+
     const handleCreateTask = async () => {
         if (!title) {
             Alert.alert('Datos incompletos', 'Por favor, ponle un título a tu tarea.');
@@ -35,6 +60,35 @@ export default function CreateTaskScreen({ navigation }) {
             Alert.alert('Duración inválida', 'La tarea debe durar al menos 15 minutos.');
             return;
         }
+
+        const now = new Date();
+        if (!isFlexible) {
+            if (targetDate < now) {
+                Alert.alert(
+                    'Hora no válida',
+                    'No puedes agendar un evento fijo en una hora o fecha que ya pasó. Por favor selecciona una hora futura.'
+                );
+                return;
+            }
+        } else {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            if (targetDate < startOfToday) {
+                Alert.alert(
+                    'Fecha no válida',
+                    'La fecha límite no puede ser anterior al día de hoy.'
+                );
+                return;
+            }
+            if (isTimeSlotPast(preferredTime)) {
+                Alert.alert(
+                    'Horario no disponible',
+                    `El horario de la ${preferredTime.toLowerCase()} ya terminó para el día de hoy. Por favor selecciona otro lapso sugerido o "Cualquier".`
+                );
+                return;
+            }
+        }
+
 
         setLoading(true);
         try {
@@ -89,16 +143,39 @@ export default function CreateTaskScreen({ navigation }) {
         setShowDatePicker(true);
     };
 
-    const SelectionButton = ({ current, value, onPress }) => (
-        <TouchableOpacity
-            style={[styles.selectBtn, current === value && styles.selectBtnActive]}
-            onPress={() => onPress(value)}
-        >
-            <Text style={[styles.selectBtnText, current === value && styles.selectBtnTextActive]}>
-                {value}
-            </Text>
-        </TouchableOpacity>
-    );
+    const SelectionButton = ({ current, value, onPress, disabled }) => {
+        const isActive = current === value;
+        return (
+            <TouchableOpacity
+                style={[
+                    styles.selectBtn,
+                    isActive && styles.selectBtnActive,
+                    disabled && styles.selectBtnDisabled
+                ]}
+                onPress={() => {
+                    if (disabled) {
+                        Alert.alert(
+                            'Horario no disponible',
+                            `El horario de la ${value.toLowerCase()} ya pasó hoy. Selecciona otro horario o "Cualquier".`
+                        );
+                        return;
+                    }
+                    onPress(value);
+                }}
+                activeOpacity={disabled ? 0.7 : 0.6}
+            >
+                <Text
+                    style={[
+                        styles.selectBtnText,
+                        isActive && styles.selectBtnTextActive,
+                        disabled && styles.selectBtnTextDisabled
+                    ]}
+                >
+                    {disabled ? `${value} (Pasó)` : value}
+                </Text>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <>
@@ -134,7 +211,13 @@ export default function CreateTaskScreen({ navigation }) {
                         <Text style={styles.label}>Momento Ideal (Lapso sugerido)</Text>
                         <View style={styles.buttonGroup}>
                             {['Cualquier', 'Mañana', 'Tarde', 'Noche'].map(time => (
-                                <SelectionButton key={time} current={preferredTime} value={time} onPress={setPreferredTime} />
+                                <SelectionButton
+                                    key={time}
+                                    current={preferredTime}
+                                    value={time}
+                                    disabled={isTimeSlotPast(time)}
+                                    onPress={setPreferredTime}
+                                />
                             ))}
                         </View>
                     </View>
@@ -238,6 +321,7 @@ export default function CreateTaskScreen({ navigation }) {
                 value={targetDate}
                 mode={pickerMode}
                 is24Hour={false}
+                minimumDate={new Date()}
                 onChange={onChangeDate}
             />
         )}
@@ -281,6 +365,7 @@ export default function CreateTaskScreen({ navigation }) {
                             display="spinner"
                             themeVariant="light"
                             textColor="#1E293B"
+                            minimumDate={isTargetToday() || pickerMode === 'date' ? new Date() : undefined}
                             onChange={onChangeDate}
                             style={styles.pickerWheel}
                         />
@@ -300,6 +385,15 @@ const styles = StyleSheet.create({
     input: { backgroundColor: colors.background, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', color: colors.textDark },
     row: { flexDirection: 'row', justifyContent: 'space-between' },
     buttonGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+        selectBtnDisabled: {
+        borderColor: '#E5E7EB',
+        backgroundColor: '#F3F4F6',
+        opacity: 0.6,
+    },
+    selectBtnTextDisabled: {
+        color: '#9CA3AF',
+        textDecorationLine: 'line-through',
+    },
     selectBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, borderWidth: 1, borderColor: colors.secondary, backgroundColor: colors.surface, marginBottom: 5 },
     selectBtnActive: { backgroundColor: colors.secondary },
     selectBtnText: { color: colors.secondary, fontWeight: 'bold', fontSize: 12 },
