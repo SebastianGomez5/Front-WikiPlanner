@@ -159,7 +159,15 @@ export default function HomeScreen({ navigation }) {
                     <Text style={[styles.cardTime, status && { color: colors.textLight }]}>{endTime}</Text>
                 </View>
                 <View style={styles.taskColumn}>
-                    <Text style={currentTitleStyle}>{item.task.title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={currentTitleStyle}>{item.task.title}</Text>
+                        {item.ai_confidence != null && (
+                            <View style={styles.cardConfidenceBadge}>
+                                <Ionicons name="sparkles" size={10} color={colors.secondary} />
+                                <Text style={styles.cardConfidenceText}>{Math.round(item.ai_confidence * 100)}%</Text>
+                            </View>
+                        )}
+                    </View>
                     <Text style={[styles.cardSubtitle, status && { color: colors.textLight }]}>
                         {statusText}
                     </Text>
@@ -278,6 +286,28 @@ export default function HomeScreen({ navigation }) {
                         <Text style={styles.modalTitle}>¿Cómo te fue con esta tarea?</Text>
                         <Text style={styles.modalTaskName}>{selectedBlock?.task?.title}</Text>
 
+                        {/* Explicabilidad de la Inteligencia Artificial (XAI) */}
+                        {selectedBlock?.ai_explanation ? (
+                            <View style={styles.modalExplanationCard}>
+                                <View style={styles.modalExplanationHeader}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Ionicons name="sparkles" size={15} color={colors.secondary} style={{ marginRight: 6 }} />
+                                        <Text style={styles.modalExplanationTitle}>¿Por qué la IA eligió esta hora?</Text>
+                                    </View>
+                                    {selectedBlock.ai_confidence != null && (
+                                        <View style={styles.confidencePill}>
+                                            <Text style={styles.confidencePillText}>
+                                                {Math.round(selectedBlock.ai_confidence * 100)}%
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.modalExplanationText}>
+                                    {selectedBlock.ai_explanation}
+                                </Text>
+                            </View>
+                        ) : null}
+
                         <TouchableOpacity
                             style={[styles.modalButton, { backgroundColor: colors.success }]}
                             onPress={() => handleDecision('completada')}
@@ -306,6 +336,59 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    // Explicabilidad XAI en el modal
+    modalExplanationCard: {
+        width: '100%',
+        backgroundColor: '#EFF6FF',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 20,
+        borderLeftWidth: 4,
+        borderLeftColor: colors.secondary,
+    },
+    modalExplanationHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    modalExplanationTitle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
+    confidencePill: {
+        backgroundColor: '#DBEAFE',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    confidencePillText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: colors.secondary,
+    },
+    modalExplanationText: {
+        fontSize: 12,
+        color: '#374151',
+        lineHeight: 17,
+    },
+    cardConfidenceBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
+        marginLeft: 6,
+    },
+    cardConfidenceText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: colors.secondary,
+        marginLeft: 2,
+    },
+
     // Banner de tareas en espera
     pendingBanner: {
         flexDirection: 'row',
