@@ -9,6 +9,7 @@ export default function HomeScreen({ navigation }) {
     const [externalEvents, setExternalEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
 
     const [selectedBlock, setSelectedBlock] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -26,13 +27,15 @@ export default function HomeScreen({ navigation }) {
 
             const params = { start_date: inicioDia.toISOString(), end_date: finDia.toISOString() };
 
-            const [agendaResponse, externalResponse] = await Promise.all([
+            const [agendaResponse, externalResponse, pendingResponse] = await Promise.all([
                 api.get('/time-blocks/agenda', { params }),
-                api.get('/time-blocks/external-events', { params })
+                api.get('/time-blocks/external-events', { params }),
+                api.get('/tasks/pending')
             ]);
 
             setAgenda(agendaResponse.data);
             setExternalEvents(externalResponse.data);
+            setPendingCount(Array.isArray(pendingResponse.data) ? pendingResponse.data.length : 0);
         } catch (error) {
             console.error('Error cargando la agenda:', error);
         } finally {
@@ -187,6 +190,30 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.header}>Tu Agenda para Hoy</Text>
             </View>
 
+            {/* Aviso de tareas en cola de espera */}
+            {!loading && pendingCount > 0 && (
+                <TouchableOpacity
+                    style={styles.pendingBanner}
+                    onPress={() => navigation.navigate('Motor IA')}
+                    activeOpacity={0.85}
+                >
+                    <View style={styles.pendingBadge}>
+                        <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.pendingTextContainer}>
+                        <Text style={styles.pendingTitle}>
+                            {pendingCount === 1 ? '1 tarea en espera de horario' : `${pendingCount} tareas en espera de horario`}
+                        </Text>
+                        <Text style={styles.pendingDescription}>
+                            Toca aquí para que la IA organice tu día y las asigne a tu agenda.
+                        </Text>
+                    </View>
+                    <View style={styles.pendingArrowBadge}>
+                        <Ionicons name="arrow-forward" size={16} color={colors.secondary} />
+                    </View>
+                </TouchableOpacity>
+            )}
+
             {loading ? (
                 <ActivityIndicator size="large" color={colors.secondary} style={{ marginTop: 50 }} />
             ) : (
@@ -279,6 +306,55 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    // Banner de tareas en espera
+    pendingBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 16,
+        borderWidth: 1.5,
+        borderColor: '#BFDBFE',
+        elevation: 2,
+        shadowColor: colors.secondary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
+    },
+    pendingBadge: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.secondary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    pendingTextContainer: {
+        flex: 1,
+        marginRight: 8,
+    },
+    pendingTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.primary,
+        marginBottom: 2,
+    },
+    pendingDescription: {
+        fontSize: 12,
+        color: '#4B5563',
+        lineHeight: 16,
+    },
+    pendingArrowBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#DBEAFE',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
     container: { flex: 1, backgroundColor: colors.background, padding: 20 },
     headerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
     headerLogo: { width: 40, height: 40, marginRight: 10 },

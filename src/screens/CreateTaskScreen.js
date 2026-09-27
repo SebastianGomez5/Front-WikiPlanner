@@ -54,9 +54,21 @@ export default function CreateTaskScreen({ navigation }) {
 
             await api.post('/tasks/', payload);
 
-            Alert.alert('¡Felicidades!', 'Actividad creada exitosamente.', [
-                { text: 'OK', onPress: () => navigation.goBack() }
-            ]);
+            Alert.alert(
+                '¡Tarea Creada con Éxito! 🎉',
+                `"${title}" quedó registrada en tu lista de espera.\n\n💡 Recuerda que para que la IA organice tu día y la asigne a tu horario ideal, debes presionar "Generar Agenda Inteligente".`,
+                [
+                    {
+                        text: 'Ir al Inicio',
+                        onPress: () => navigation.navigate('MainTabs', { screen: 'Inicio' }),
+                        style: 'cancel'
+                    },
+                    {
+                        text: '⚡ Ir al Motor IA',
+                        onPress: () => navigation.navigate('MainTabs', { screen: 'Motor IA' })
+                    }
+                ]
+            );
 
         } catch (error) {
             console.error(error);
