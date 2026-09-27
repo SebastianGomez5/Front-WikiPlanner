@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { colors } from '../theme/color';
 import api from '../services/api';
 
 export default function AgendaScreen({ navigation }) {
+  const scrollViewRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
 
@@ -63,17 +64,10 @@ export default function AgendaScreen({ navigation }) {
 
       fetchPendingTasks();
 
-      const mensajeAlerta = noAgendadas.length > 0
-        ? `La IA organizó ${response.data.tareas_agendadas} tarea(s). ${noAgendadas.length} no pudieron agendarse por falta de espacio.`
-        : `La IA ha organizado ${response.data.tareas_agendadas} tarea(s) y sincronizado con Google Calendar.`;
-
-      Alert.alert(
-        '¡Magia Completada!',
-        mensajeAlerta,
-        [
-          { text: 'Ver mi Agenda', onPress: () => navigation.navigate('Inicio') }
-        ]
-      );
+      // Desplazamos suavemente la pantalla hacia los resultados para que el usuario los lea con calma
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 200);
 
     } catch (error) {
       console.error("Error al generar agenda:", error);
@@ -91,7 +85,7 @@ export default function AgendaScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
 
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Motor de Inteligencia</Text>
@@ -211,10 +205,21 @@ export default function AgendaScreen({ navigation }) {
           {resultado.tareas_no_agendadas.map((item) => (
             <View key={item.task_id} style={styles.warningItem}>
               <Text style={styles.warningItemTitle}>{item.title}</Text>
-              <Text style={styles.warningItemReason}>{item.reason}</Text>
+              <Text style={styles.warningItemReason}>💡 Causa: {item.reason}</Text>
             </View>
           ))}
         </View>
+      )}
+
+      {/* Botón para navegar al Inicio cuando termine de leer los detalles */}
+      {resultado && resultado.exito && (
+        <TouchableOpacity
+          style={styles.goToAgendaBtn}
+          onPress={() => navigation.navigate('Inicio')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.goToAgendaBtnText}>📅 Ver mi Agenda en Inicio →</Text>
+        </TouchableOpacity>
       )}
 
     </ScrollView>
@@ -222,6 +227,27 @@ export default function AgendaScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  goToAgendaBtn: {
+    width: '100%',
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 20,
+    elevation: 4,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  goToAgendaBtnText: {
+    color: colors.surface,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
   container: {
     flexGrow: 1,
     backgroundColor: colors.background,

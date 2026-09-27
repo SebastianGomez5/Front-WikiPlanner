@@ -37,14 +37,16 @@ const KpiCard = ({ label, value, unit = '%', color, description, extra }) => (
 export default function StatsScreen({ navigation }) {
     const [data, setData] = useState(null);
     const [balance, setBalance] = useState(null);
+    const [balancePeriod, setBalancePeriod] = useState('day');
+    const [loadingBalance, setLoadingBalance] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const fetchKPIs = async () => {
+    const fetchKPIs = async (period = balancePeriod) => {
         try {
             const [kpiResponse, balanceResponse] = await Promise.all([
                 api.get('/kpi/dashboard'),
-                api.get('/kpi/balance'),
+                api.get('/kpi/balance', { params: { period } }),
             ]);
             setData(kpiResponse.data);
             setBalance(balanceResponse.data);
@@ -53,6 +55,20 @@ export default function StatsScreen({ navigation }) {
         } finally {
             setLoading(false);
             setRefreshing(false);
+        }
+    };
+
+    const handlePeriodChange = async (newPeriod) => {
+        if (newPeriod === balancePeriod) return;
+        setBalancePeriod(newPeriod);
+        setLoadingBalance(true);
+        try {
+            const response = await api.get('/kpi/balance', { params: { period: newPeriod } });
+            setBalance(response.data);
+        } catch (error) {
+            console.error('Error al cambiar período de balance:', error);
+        } finally {
+            setLoadingBalance(false);
         }
     };
 
@@ -212,11 +228,47 @@ export default function StatsScreen({ navigation }) {
             </View>
 
             {/* ── Balance Ocio / Productividad ── */}
-            <Text style={styles.sectionTitle}>⚖️ Balance Ocio / Productividad</Text>
+            <View style={styles.balanceHeaderRow}>
+                <Text style={styles.sectionTitle}>⚖️ Balance Ocio / Productividad</Text>
+            </View>
+
+            {/* Filtro de período interactivo */}
+            <View style={styles.filterBar}>
+                <Text style={styles.filterLabel}>Filtrar por:</Text>
+                <View style={styles.filterPillsRow}>
+                    {[
+                        { key: 'day', label: '☀️ Hoy' },
+                        { key: 'week', label: '🗓️ Semana' },
+                        { key: 'month', label: '📆 Mes' },
+                    ].map(tab => {
+                        const isSelected = balancePeriod === tab.key;
+                        return (
+                            <TouchableOpacity
+                                key={tab.key}
+                                style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                                onPress={() => handlePeriodChange(tab.key)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                                    {tab.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+
             <View style={styles.balanceCard}>
-                {!balance || balance.estado === 'sin_datos' ? (
+                {loadingBalance ? (
+                    <View style={{ paddingVertical: 35, alignItems: 'center' }}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                        <Text style={{ marginTop: 8, fontSize: 12, color: colors.textLight }}>
+                            Consultando balance...
+                        </Text>
+                    </View>
+                ) : !balance || balance.estado === 'sin_datos' ? (
                     <Text style={styles.balanceEmptyText}>
-                        Aún no tienes actividades agendadas esta semana.{`\n`}¡Genera tu agenda y comienza!
+                        Aún no tienes actividades agendadas para {balance?.label_prep || (balancePeriod === 'day' ? 'hoy' : balancePeriod === 'week' ? 'esta semana' : 'este mes')}.{`\n`}¡Genera tu agenda y comienza!
                     </Text>
                 ) : (
                     <>
@@ -254,7 +306,7 @@ export default function StatsScreen({ navigation }) {
 
                         {/* 3. Total de horas */}
                         <Text style={styles.balanceHorasText}>
-                            {balance.total_horas_agendadas}h agendadas esta semana
+                            {balance.total_horas_agendadas}h agendadas {balance.label_prep || (balancePeriod === 'day' ? 'hoy' : balancePeriod === 'week' ? 'esta semana' : 'este mes')}
                         </Text>
 
                         {/* 4. Barras por categoría (solo las que tienen tiempo) */}
@@ -293,6 +345,59 @@ export default function StatsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    // Filtro interactivo de período (Hoy / Semana / Mes)
+    balanceHeaderRow: {
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    filterBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        backgroundColor: colors.surface,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+    },
+    filterLabel: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
+    filterPillsRow: {
+        flexDirection: 'row',
+        gap: 6,
+    },
+    filterChip: {
+        paddingVertical: 6,
+        paddingHorizontal: 11,
+        borderRadius: 16,
+        backgroundColor: '#F3F4F6',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    filterChipActive: {
+        backgroundColor: colors.secondary,
+        borderColor: colors.secondary,
+    },
+    filterChipText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: colors.textDark,
+    },
+    filterChipTextActive: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+    },
+
     container: { flex: 1, backgroundColor: colors.background, padding: 20 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
     loadingText: { marginTop: 12, color: colors.textLight, fontSize: 14 },
