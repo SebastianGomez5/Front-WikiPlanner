@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, StyleSheet, ScrollView,
-    TouchableOpacity, Switch, Alert, ActivityIndicator, Platform
+    TouchableOpacity, Switch, Alert, ActivityIndicator, Platform, Modal, Pressable
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../theme/color';
@@ -97,7 +97,8 @@ export default function EditTaskScreen({ navigation, route }) {
     );
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+        <>
+            <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={styles.card}>
 
                 <Text style={styles.label}>¿Qué tienes que hacer?</Text>
@@ -225,14 +226,6 @@ export default function EditTaskScreen({ navigation, route }) {
                     ))}
                 </View>
 
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={targetDate}
-                        mode={pickerMode}
-                        display="default"
-                        onChange={onChangeDate}
-                    />
-                )}
 
                 <TouchableOpacity
                     style={styles.submitButton}
@@ -247,6 +240,64 @@ export default function EditTaskScreen({ navigation, route }) {
 
             </View>
         </ScrollView>
+
+        {/* ── DateTimePicker para Android (diálogo nativo del sistema) ── */}
+        {Platform.OS === 'android' && showDatePicker && (
+            <DateTimePicker
+                value={targetDate}
+                mode={pickerMode}
+                is24Hour={false}
+                onChange={onChangeDate}
+            />
+        )}
+
+        {/* ── DateTimePicker para iOS (Bottom Sheet con rueda Spinner visible) ── */}
+        {Platform.OS === 'ios' && (
+            <Modal
+                transparent
+                animationType="slide"
+                visible={showDatePicker}
+                onRequestClose={() => setShowDatePicker(false)}
+            >
+                <Pressable style={styles.pickerOverlay} onPress={() => setShowDatePicker(false)}>
+                    <Pressable style={styles.pickerSheet} onPress={() => {}}>
+                        {/* Header con previsualización en vivo */}
+                        <View style={styles.pickerHeader}>
+                            <View>
+                                <Text style={styles.pickerTitle}>
+                                    {pickerMode === 'date' ? '📅 Seleccionar Fecha' : '🕐 Seleccionar Hora'}
+                                </Text>
+                                <Text style={styles.pickerSubtitle}>
+                                    {pickerMode === 'date'
+                                        ? targetDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                                        : targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    }
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowDatePicker(false)}
+                                style={styles.pickerDoneBtn}
+                            >
+                                <Text style={styles.pickerDoneText}>Listo</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.pickerDivider} />
+
+                        <DateTimePicker
+                            value={targetDate}
+                            mode={pickerMode}
+                            display="spinner"
+                            themeVariant="light"
+                            textColor="#1E293B"
+                            onChange={onChangeDate}
+                            style={styles.pickerWheel}
+                        />
+                    </Pressable>
+                </Pressable>
+            </Modal>
+        )}
+        </>
     );
 }
 
@@ -275,4 +326,34 @@ const styles = StyleSheet.create({
     stepperBtnText: { color: colors.surface, fontSize: 18, fontWeight: 'bold', marginTop: -2 },
     stepperValue: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, minWidth: 24, textAlign: 'center' },
     durationSummary: { textAlign: 'center', fontSize: 13, color: colors.primary, fontWeight: '600', marginTop: 8, marginBottom: 5 },
+
+    // Modal DateTimePicker
+    pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+    pickerSheet: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingBottom: 32,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+    },
+    pickerSubtitle: {
+        fontSize: 13,
+        color: colors.secondary,
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    pickerWheel: {
+        height: 216,
+        width: '100%',
+        backgroundColor: colors.surface,
+    },
+    pickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12 },
+    pickerTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark },
+    pickerDoneBtn: { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 7, borderRadius: 20 },
+    pickerDoneText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+    pickerDivider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: 16 },
 });

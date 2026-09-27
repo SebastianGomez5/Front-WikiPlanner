@@ -36,13 +36,18 @@ const KpiCard = ({ label, value, unit = '%', color, description, extra }) => (
 
 export default function StatsScreen({ navigation }) {
     const [data, setData] = useState(null);
+    const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const fetchKPIs = async () => {
         try {
-            const response = await api.get('/kpi/dashboard');
-            setData(response.data);
+            const [kpiResponse, balanceResponse] = await Promise.all([
+                api.get('/kpi/dashboard'),
+                api.get('/kpi/balance'),
+            ]);
+            setData(kpiResponse.data);
+            setBalance(balanceResponse.data);
         } catch (error) {
             console.error('Error cargando KPIs:', error);
         } finally {
@@ -205,6 +210,84 @@ export default function StatsScreen({ navigation }) {
                     La <Text style={{ fontWeight: 'bold' }}>Confianza promedio</Text> refleja qué tan seguros están los slots sugeridos según la función de penalización del motor CSP.
                 </Text>
             </View>
+
+            {/* ── Balance Ocio / Productividad ── */}
+            <Text style={styles.sectionTitle}>⚖️ Balance Ocio / Productividad</Text>
+            <View style={styles.balanceCard}>
+                {!balance || balance.estado === 'sin_datos' ? (
+                    <Text style={styles.balanceEmptyText}>
+                        Aún no tienes actividades agendadas esta semana.{`\n`}¡Genera tu agenda y comienza!
+                    </Text>
+                ) : (
+                    <>
+                        {/* 1. Mensaje de recomendación (arriba) */}
+                        <View style={[
+                            styles.balanceMensajeBox,
+                            balance.estado === 'equilibrado'
+                                ? { borderLeftColor: '#10B981', backgroundColor: '#F0FDF4' }
+                                : balance.estado === 'desequilibrio_productividad'
+                                    ? { borderLeftColor: '#F97316', backgroundColor: '#FFF7ED' }
+                                    : balance.estado === 'desequilibrio_ocio'
+                                        ? { borderLeftColor: '#F59E0B', backgroundColor: '#FFFBEB' }
+                                        : { borderLeftColor: '#9CA3AF', backgroundColor: '#F9FAFB' }
+                        ]}>
+                            <Text style={styles.balanceMensajeText}>{balance.mensaje}</Text>
+                        </View>
+
+                        {/* 2. Dos números grandes: Productivo vs Descanso/Ocio */}
+                        <View style={styles.balanceGruposRow}>
+                            <View style={[styles.balanceGrupoBadge, { backgroundColor: '#EFF6FF' }]}>
+                                <Text style={[styles.balanceGrupoNum, { color: '#3B82F6' }]}>
+                                    {balance.resumen_grupos?.productividad ?? 0}%
+                                </Text>
+                                <Text style={styles.balanceGrupoLabel}>Productivo</Text>
+                                <Text style={styles.balanceGrupoSub}>Trabajo + Estudio</Text>
+                            </View>
+                            <View style={[styles.balanceGrupoBadge, { backgroundColor: '#FFF7ED' }]}>
+                                <Text style={[styles.balanceGrupoNum, { color: '#F97316' }]}>
+                                    {((balance.resumen_grupos?.bienestar ?? 0) + (balance.resumen_grupos?.ocio ?? 0)).toFixed(1)}%
+                                </Text>
+                                <Text style={styles.balanceGrupoLabel}>Descanso / Ocio</Text>
+                                <Text style={styles.balanceGrupoSub}>Salud + Hogar + Ocio</Text>
+                            </View>
+                        </View>
+
+                        {/* 3. Total de horas */}
+                        <Text style={styles.balanceHorasText}>
+                            {balance.total_horas_agendadas}h agendadas esta semana
+                        </Text>
+
+                        {/* 4. Barras por categoría (solo las que tienen tiempo) */}
+                        {(balance.por_categoria || [])
+                            .filter(item => item.minutos > 0)
+                            .map((item) => {
+                                const COLOR_MAP = {
+                                    Trabajo: '#3B82F6',
+                                    Estudio: '#8B5CF6',
+                                    Salud:   '#10B981',
+                                    Hogar:   '#F59E0B',
+                                    Ocio:    '#F97316',
+                                };
+                                const color = COLOR_MAP[item.categoria] || '#9CA3AF';
+                                const horasLabel = item.horas >= 1
+                                    ? `${item.horas}h`
+                                    : `${item.minutos}min`;
+                                return (
+                                    <View key={item.categoria} style={styles.balanceRow}>
+                                        <View style={styles.balanceLabelRow}>
+                                            <View style={[styles.balanceDot, { backgroundColor: color }]} />
+                                            <Text style={styles.balanceCatLabel}>{item.categoria}</Text>
+                                            <Text style={styles.balanceCatHoras}>{horasLabel}</Text>
+                                            <Text style={[styles.balanceCatPct, { color }]}>({item.porcentaje}%)</Text>
+                                        </View>
+                                        <ProgressBar value={item.porcentaje} color={color} max={100} />
+                                    </View>
+                                );
+                            })
+                        }
+                    </>
+                )}
+            </View>
         </ScrollView>
     );
 }
@@ -249,4 +332,22 @@ const styles = StyleSheet.create({
     noteCard: { backgroundColor: '#EFF6FF', borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: colors.primary },
     noteTitle: { fontSize: 14, fontWeight: 'bold', color: colors.primary, marginBottom: 8 },
     noteText: { fontSize: 12, color: colors.textDark, lineHeight: 18 },
+
+    // Balance Ocio/Productividad
+    balanceCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, elevation: 2 },
+    balanceEmptyText: { fontSize: 13, color: colors.textLight, textAlign: 'center', lineHeight: 20, paddingVertical: 12 },
+    balanceHorasText: { fontSize: 13, color: colors.textLight, marginBottom: 14, textAlign: 'center' },
+    balanceRow: { marginBottom: 12 },
+    balanceLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+    balanceDot: { width: 10, height: 10, borderRadius: 5, marginRight: 6 },
+    balanceCatLabel: { fontSize: 13, fontWeight: '600', color: colors.textDark, flex: 1 },
+    balanceCatHoras: { fontSize: 12, color: colors.textLight, marginRight: 8 },
+    balanceCatPct: { fontSize: 13, fontWeight: 'bold', minWidth: 38, textAlign: 'right' },
+    balanceGruposRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 12 },
+    balanceGrupoBadge: { flex: 1, borderRadius: 10, padding: 10, alignItems: 'center', marginHorizontal: 3 },
+    balanceGrupoNum: { fontSize: 20, fontWeight: 'bold' },
+    balanceGrupoLabel: { fontSize: 10, color: colors.textLight, marginTop: 2, textAlign: 'center' },
+    balanceGrupoSub: { fontSize: 9, color: colors.textLight, marginTop: 1, textAlign: 'center' },
+    balanceMensajeBox: { borderLeftWidth: 4, borderRadius: 8, padding: 12, marginTop: 4 },
+    balanceMensajeText: { fontSize: 12, color: colors.textDark, lineHeight: 18 },
 });
